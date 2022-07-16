@@ -2,6 +2,8 @@ use clap::{Parser, Subcommand};
 
 // Most linux distros ship with vi
 const EDITOR_CONST: &str = "/usr/bin/vi";
+
+// TODO get this from a config file
 const DEV_DIR: &str = "/home/tmforshaw/Development";
 
 #[derive(Parser)]
@@ -61,10 +63,9 @@ fn main() {
         }
         Commands::Rust { command } => match &command {
             RustCommands::New { project_name } => {
-                // Check if alredy exists
-
                 let location = format!("{DEV_DIR}/Rust/{project_name}");
 
+                // Check if project already exists
                 if run_command("ls", vec![location.as_str()]).is_err() {
                     run_command("cargo", vec!["new", location.clone().as_str()]).unwrap();
 
