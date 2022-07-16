@@ -1,7 +1,8 @@
 use clap::{Parser, Subcommand};
 
 // Most linux distros ship with vi
-const EDITOR_CONST: &str = "/usr/bin/vi";
+const EDIT_BIN: &str = "/usr/bin/vi";
+const CONF_DIR: &str = ".config/noteiser/config.toml";
 
 // TODO get this from a config file
 const DEV_DIR: &str = "/home/tmforshaw/Development";
@@ -30,6 +31,8 @@ enum Commands {
         #[clap(subcommand)]
         command: RustCommands,
     },
+    /// Edit config
+    Config,
 }
 
 #[derive(Subcommand)]
@@ -80,5 +83,8 @@ fn main() {
                 }
             }
         },
+        Commands::Config => {
+            // Open the config file
+        }
     }
 }
