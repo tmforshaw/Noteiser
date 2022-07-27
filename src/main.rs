@@ -36,7 +36,7 @@ enum Commands {
     /// Edit config
     Config {
         #[clap(subcommand)]
-        command: ConfigCommands,
+        command: Option<ConfigCommands>,
     },
 }
 
@@ -94,7 +94,7 @@ impl Noteiser {
         std::process::Command::new(command).args(args).status()
     }
 
-    fn run_editor(self: &Self, filepath: &str) -> Result<std::process::ExitStatus, std::io::Error> {
+    fn run_editor(&self, filepath: &str) -> Result<std::process::ExitStatus, std::io::Error> {
         if let Ok(path) = Path::new(&filepath).canonicalize() {
             std::process::Command::new(self.editor.clone())
                 .args(vec![path])
@@ -105,6 +105,20 @@ impl Noteiser {
                 format!("Filename was invalid '{}'", filepath).as_str(),
             ))
         }
+    }
+
+    fn config_open(&self, config_path_str: &str) {
+        // Open the config file
+        match self.run_editor(config_path_str) {
+            Ok(_) => {
+                // std::process::exit(0x1000);
+            }
+
+            Err(e) => {
+                println!("Command 'config open' failed: {e}");
+                std::process::exit(0x1000);
+            }
+        };
     }
 
     fn match_command(&self) {
@@ -147,57 +161,63 @@ impl Noteiser {
                     }
                 }
             },
-            Commands::Config { command } => {
+            Commands::Config {
+                command: command_maybe,
+            } => {
                 let config_path_str = format!("{}/{CONF_DIR}", self.home.clone().unwrap());
                 let config_path = Path::new(config_path_str.as_str());
 
                 // Check if config location exists
                 let canon_path = config_path.clone().canonicalize();
 
-                match command {
-                    ConfigCommands::Open => {
-                        if canon_path.is_ok() {
-                            // Open the config file
-                            match self.run_editor(config_path_str.clone().as_str()) {
-                                Ok(_) => {
-                                    // std::process::exit(0x1000);
+                match command_maybe {
+                    Some(command) => {
+                        match command {
+                            ConfigCommands::Open => {
+                                if canon_path.is_ok() {
+                                    self.config_open(config_path_str.clone().as_str());
+                                } else {
+                                    println!(
+                                        "Config file not found: {} '{config_path_str}'",
+                                        canon_path.err().unwrap()
+                                    )
                                 }
+                            } // ConfigCommands::Setup => {
+                              //     // TODO fix this
 
-                                Err(e) => {
-                                    println!("Command 'config open' failed: {e}");
-                                    std::process::exit(0x1000);
-                                }
-                            };
+                              //     if canon_path.is_err() {
+                              //         Self::run_command(
+                              //             "mkdir",
+                              //             vec![
+                              //                 "-p",
+                              //                 format!("{}/.config/noteiser", self.home.clone().unwrap())
+                              //                     .as_str(),
+                              //             ],
+                              //         )
+                              //         .unwrap();
+
+                              //         Self::run_command(
+                              //             self.editor.clone().as_str(),
+                              //             vec![config_path_str.as_str()],
+                              //         )
+                              //         .unwrap();
+                              //     } else {
+                              //         println!("Config already created");
+                              //         std::process::exit(0x1000);
+                              //     }
+                              // }
+                        }
+                    }
+                    None => {
+                        if canon_path.is_ok() {
+                            self.config_open(config_path_str.clone().as_str());
                         } else {
                             println!(
                                 "Config file not found: {} '{config_path_str}'",
                                 canon_path.err().unwrap()
                             )
                         }
-                    } // ConfigCommands::Setup => {
-                      //     // TODO fix this
-
-                      //     if canon_path.is_err() {
-                      //         Self::run_command(
-                      //             "mkdir",
-                      //             vec![
-                      //                 "-p",
-                      //                 format!("{}/.config/noteiser", self.home.clone().unwrap())
-                      //                     .as_str(),
-                      //             ],
-                      //         )
-                      //         .unwrap();
-
-                      //         Self::run_command(
-                      //             self.editor.clone().as_str(),
-                      //             vec![config_path_str.as_str()],
-                      //         )
-                      //         .unwrap();
-                      //     } else {
-                      //         println!("Config already created");
-                      //         std::process::exit(0x1000);
-                      //     }
-                      // }
+                    }
                 }
             }
         }
