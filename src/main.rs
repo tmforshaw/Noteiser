@@ -82,32 +82,38 @@ impl Noteiser {
         } else {
             Err(std::io::Error::new(
                 std::io::ErrorKind::InvalidInput,
-                "Filename was invalid for editor",
+                format!("Filename was invalid '{}'", filepath).as_str(),
             ))
         }
     }
 
     fn match_command(&self) {
         match &self.cli.command {
-            Commands::Open { file_name } => {
-                self.run_editor(file_name).unwrap();
-            }
+            Commands::Open { file_name } => match self.run_editor(file_name) {
+                Ok(_) => {}
+                Err(e) => println!("Command 'open' failed: {e}"),
+            },
             Commands::Rust { command } => match &command {
                 RustCommands::New { project_name } => {
                     let location_string = format!("{DEV_DIR}/Rust/{project_name}");
-                    // let location = Path::new(&location_string.clone());
 
-                    // Check if project already exists
-                    if Self::run_command("ls", vec![location_string.clone().as_str()]).is_err() {
-                        Self::run_command("cargo", vec!["new", location_string.clone().as_str()])
-                            .unwrap();
+                    if let Err(_) = Path::new(&location_string.clone()).canonicalize() {
+                        match Self::run_command(
+                            "cargo",
+                            vec!["-q", "new", location_string.clone().as_str()],
+                        ) {
+                            Ok(_) => println!("Project '{project_name}' created successfully"),
+                            Err(e) => println!("Cargo error: {e}"),
+                        }
 
-                        self.run_editor(
-                            format!("{}/src/main.rs", location_string.clone()).as_str(),
-                        )
-                        .unwrap();
+                        match self
+                            .run_editor(format!("{}/src/main.rs", location_string.clone()).as_str())
+                        {
+                            Ok(_) => {}
+                            Err(e) => println!("Command 'new' failed: {e}"),
+                        }
                     } else {
-                        println!("Project already exists");
+                        println!("Project '{project_name}' already exists");
                         std::process::exit(0x1000);
                     }
                 }
