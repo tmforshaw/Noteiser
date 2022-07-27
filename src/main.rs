@@ -4,7 +4,7 @@ use clap::{Parser, Subcommand};
 
 // Most linux distros ship with vi
 const EDIT_BIN: &str = "/usr/bin/vi";
-// const CONF_DIR: &str = ".config/noteiser/config.toml";
+const CONF_DIR: &str = ".config/noteiser/config.toml";
 
 // TODO get this from a config file
 const DEV_DIR: &str = "/home/tmforshaw/Development";
@@ -34,7 +34,10 @@ enum Commands {
         command: RustCommands,
     },
     /// Edit config
-    Config,
+    Config {
+        #[clap(subcommand)]
+        command: ConfigCommands,
+    },
 }
 
 #[derive(Subcommand)]
@@ -47,9 +50,19 @@ enum RustCommands {
     },
 }
 
+#[derive(Subcommand)]
+enum ConfigCommands {
+    /// Open up the config file
+    Open,
+
+    /// Setup the config file
+    Setup,
+}
+
 struct Noteiser {
     cli: Cli,
     editor: String,
+    home: Option<String>,
 }
 
 impl Noteiser {
@@ -64,7 +77,15 @@ impl Noteiser {
             EDIT_BIN.to_string()
         };
 
-        Self { cli, editor }
+        let home = if let Ok(home) = std::env::var("HOME") {
+            Some(home)
+        } else {
+            // Error
+
+            None
+        };
+
+        Self { cli, editor, home }
     }
 
     fn run_command(
@@ -91,7 +112,7 @@ impl Noteiser {
         match &self.cli.command {
             Commands::Open { file_name } => match self.run_editor(file_name) {
                 Ok(_) => {}
-                Err(e) => println!("Command 'open' failed: {e}"),
+                Err(e) => println!("Command 'rust open' failed: {e}"),
             },
             Commands::Rust { command } => match &command {
                 RustCommands::New { project_name } => {
@@ -110,7 +131,7 @@ impl Noteiser {
                             .run_editor(format!("{}/src/main.rs", location_string.clone()).as_str())
                         {
                             Ok(_) => {}
-                            Err(e) => println!("Command 'new' failed: {e}"),
+                            Err(e) => println!("Command 'rust new' failed: {e}"),
                         }
                     } else {
                         println!("Project '{project_name}' already exists");
@@ -118,8 +139,27 @@ impl Noteiser {
                     }
                 }
             },
-            Commands::Config => {
-                // Open the config file
+            Commands::Config { command } => {
+                let config_path_str = format!("{}/{CONF_DIR}", self.home.clone().unwrap());
+
+                match command {
+                    ConfigCommands::Open => {
+                        // Check if config location exists
+                        match Path::new(&config_path_str.clone()).canonicalize() {
+                            Ok(_) => {
+                                // Open the config file
+                                match self.run_editor(format!("{}", CONF_DIR).as_str()) {
+                                    Ok(_) => {}
+                                    Err(e) => println!("Command 'config open' failed: {e}"),
+                                };
+                            }
+                            Err(e) => {
+                                println!("Config file not found: {e} '{config_path_str}'");
+                            }
+                        }
+                    }
+                    ConfigCommands::Setup => {}
+                }
             }
         }
     }
