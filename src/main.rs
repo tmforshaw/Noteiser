@@ -112,7 +112,10 @@ impl Noteiser {
         match &self.cli.command {
             Commands::Open { file_name } => match self.run_editor(file_name) {
                 Ok(_) => {}
-                Err(e) => println!("Command 'rust open' failed: {e}"),
+                Err(e) => {
+                    println!("Command 'rust open' failed: {e}");
+                    std::process::exit(0x1000);
+                }
             },
             Commands::Rust { command } => match &command {
                 RustCommands::New { project_name } => {
@@ -124,14 +127,20 @@ impl Noteiser {
                             vec!["-q", "new", location_string.clone().as_str()],
                         ) {
                             Ok(_) => println!("Project '{project_name}' created successfully"),
-                            Err(e) => println!("Cargo error: {e}"),
+                            Err(e) => {
+                                println!("Cargo error: {e}");
+                                std::process::exit(0x1000);
+                            }
                         }
 
                         match self
                             .run_editor(format!("{}/src/main.rs", location_string.clone()).as_str())
                         {
                             Ok(_) => {}
-                            Err(e) => println!("Command 'rust new' failed: {e}"),
+                            Err(e) => {
+                                println!("Command 'rust new' failed: {e}");
+                                std::process::exit(0x1000);
+                            }
                         }
                     } else {
                         println!("Project '{project_name}' already exists");
@@ -141,24 +150,56 @@ impl Noteiser {
             },
             Commands::Config { command } => {
                 let config_path_str = format!("{}/{CONF_DIR}", self.home.clone().unwrap());
+                let config_path = Path::new(config_path_str.as_str());
+
+                // Check if config location exists
+                let canon_path = config_path.clone().canonicalize();
 
                 match command {
                     ConfigCommands::Open => {
-                        // Check if config location exists
-                        match Path::new(&config_path_str.clone()).canonicalize() {
-                            Ok(_) => {
-                                // Open the config file
-                                match self.run_editor(format!("{}", CONF_DIR).as_str()) {
-                                    Ok(_) => {}
-                                    Err(e) => println!("Command 'config open' failed: {e}"),
-                                };
-                            }
-                            Err(e) => {
-                                println!("Config file not found: {e} '{config_path_str}'");
-                            }
+                        if canon_path.is_ok() {
+                            // Open the config file
+                            match self.run_editor(config_path_str.clone().as_str()) {
+                                Ok(_) => {
+                                    // std::process::exit(0x1000);
+                                }
+
+                                Err(e) => {
+                                    println!("Command 'config open' failed: {e}");
+                                    std::process::exit(0x1000);
+                                }
+                            };
+                        } else {
+                            println!(
+                                "Config file not found: {} '{config_path_str}'",
+                                canon_path.err().unwrap()
+                            )
                         }
                     }
-                    ConfigCommands::Setup => {}
+                    ConfigCommands::Setup => {
+                        // TODO fix this
+
+                        if canon_path.is_err() {
+                            Self::run_command(
+                                "mkdir",
+                                vec![
+                                    "-p",
+                                    format!("{}/.config/noteiser", self.home.clone().unwrap())
+                                        .as_str(),
+                                ],
+                            )
+                            .unwrap();
+
+                            Self::run_command(
+                                self.editor.clone().as_str(),
+                                vec![config_path_str.as_str()],
+                            )
+                            .unwrap();
+                        } else {
+                            println!("Config already created");
+                            std::process::exit(0x1000);
+                        }
+                    }
                 }
             }
         }
