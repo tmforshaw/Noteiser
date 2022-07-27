@@ -54,9 +54,8 @@ enum RustCommands {
 enum ConfigCommands {
     /// Open up the config file
     Open,
-
-    /// Setup the config file
-    Setup,
+    // /// Setup the config file
+    // Setup,
 }
 
 struct Noteiser {
@@ -175,31 +174,30 @@ impl Noteiser {
                                 canon_path.err().unwrap()
                             )
                         }
-                    }
-                    ConfigCommands::Setup => {
-                        // TODO fix this
+                    } // ConfigCommands::Setup => {
+                      //     // TODO fix this
 
-                        if canon_path.is_err() {
-                            Self::run_command(
-                                "mkdir",
-                                vec![
-                                    "-p",
-                                    format!("{}/.config/noteiser", self.home.clone().unwrap())
-                                        .as_str(),
-                                ],
-                            )
-                            .unwrap();
+                      //     if canon_path.is_err() {
+                      //         Self::run_command(
+                      //             "mkdir",
+                      //             vec![
+                      //                 "-p",
+                      //                 format!("{}/.config/noteiser", self.home.clone().unwrap())
+                      //                     .as_str(),
+                      //             ],
+                      //         )
+                      //         .unwrap();
 
-                            Self::run_command(
-                                self.editor.clone().as_str(),
-                                vec![config_path_str.as_str()],
-                            )
-                            .unwrap();
-                        } else {
-                            println!("Config already created");
-                            std::process::exit(0x1000);
-                        }
-                    }
+                      //         Self::run_command(
+                      //             self.editor.clone().as_str(),
+                      //             vec![config_path_str.as_str()],
+                      //         )
+                      //         .unwrap();
+                      //     } else {
+                      //         println!("Config already created");
+                      //         std::process::exit(0x1000);
+                      //     }
+                      // }
                 }
             }
         }
