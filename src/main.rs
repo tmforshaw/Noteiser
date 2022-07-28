@@ -1,13 +1,11 @@
+use std::fs::File;
+use std::io::prelude::*;
 use std::path::Path;
 
 use clap::{Parser, Subcommand};
+use serde_derive::Deserialize;
 
-// Most linux distros ship with vi
-const EDIT_BIN: &str = "/usr/bin/vi";
 const CONF_DIR: &str = ".config/noteiser/config.toml";
-
-// TODO get this from a config file
-const DEV_DIR: &str = "/home/tmforshaw/Development";
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None, propagate_version = true )]
@@ -18,6 +16,14 @@ struct Cli {
 
     #[clap(subcommand)]
     command: Commands,
+}
+
+#[allow(dead_code)]
+#[derive(Debug, Deserialize)]
+struct TomlConfig {
+    editor: Option<String>,
+    editor_backup: Option<String>,
+    dev: String,
 }
 
 #[derive(Subcommand)]
@@ -54,37 +60,46 @@ enum RustCommands {
 enum ConfigCommands {
     /// Open up the config file
     Open,
+    Get,
     // /// Setup the config file
     // Setup,
 }
 
-struct Noteiser {
-    cli: Cli,
-    editor: String,
-    home: Option<String>,
-}
+struct Noteiser {}
 
 impl Noteiser {
-    fn new() -> Self {
-        let cli = Cli::parse();
-
-        let editor = if let Some(com_editor) = cli.editor.clone() {
-            com_editor
+    fn editor() -> String {
+        if let Some(cli_editor) = Self::cli().editor {
+            cli_editor
+        } else if let Some(conf_editor) = Self::config().editor {
+            conf_editor
+        } else if let Some(conf_editor) = Self::config().editor_backup {
+            conf_editor
         } else if let Ok(env_editor) = std::env::var("EDITOR") {
             env_editor
         } else {
-            EDIT_BIN.to_string()
-        };
+            println!("No available editors to use");
+            std::process::exit(0x1000);
+        }
+    }
 
-        let home = if let Ok(home) = std::env::var("HOME") {
-            Some(home)
+    fn cli() -> Cli {
+        Cli::parse()
+    }
+
+    fn home() -> String {
+        if let Ok(home) = std::env::var("HOME") {
+            home
         } else {
-            // Error
+            println!("Couldn't find home directory");
+            std::process::exit(0x1000);
+        }
+    }
 
-            None
-        };
+    fn start(cli: Cli) -> ! {
+        Self::match_command(cli);
 
-        Self { cli, editor, home }
+        loop {}
     }
 
     fn run_command(
@@ -94,9 +109,9 @@ impl Noteiser {
         std::process::Command::new(command).args(args).status()
     }
 
-    fn run_editor(&self, filepath: &str) -> Result<std::process::ExitStatus, std::io::Error> {
+    fn run_editor(filepath: &str) -> Result<std::process::ExitStatus, std::io::Error> {
         if let Ok(path) = Path::new(&filepath).canonicalize() {
-            std::process::Command::new(self.editor.clone())
+            std::process::Command::new(Self::editor().clone())
                 .args(vec![path])
                 .status()
         } else {
@@ -107,23 +122,61 @@ impl Noteiser {
         }
     }
 
-    fn config_open(&self, config_path_str: &str) {
-        // Open the config file
-        match self.run_editor(config_path_str) {
-            Ok(_) => {
-                // std::process::exit(0x1000);
-            }
-
+    fn config_open() {
+        // Open in editor
+        match Self::run_editor(Self::config_dir().as_str()) {
+            Ok(_) => {}
             Err(e) => {
-                println!("Command 'config open' failed: {e}");
+                println!("Editor failed to run: {e}");
                 std::process::exit(0x1000);
             }
         };
     }
 
-    fn match_command(&self) {
-        match &self.cli.command {
-            Commands::Open { file_name } => match self.run_editor(file_name) {
+    fn config_dir() -> String {
+        let path_string = format!("{}/{CONF_DIR}", Self::home());
+        let path = Path::new(path_string.as_str());
+
+        // Check if config location exists
+        match path.clone().canonicalize() {
+            Ok(_) => return path_string,
+            Err(_) => {
+                println!("Couldn't find config directory");
+                std::process::exit(0x1000);
+            }
+        }
+    }
+
+    fn config() -> TomlConfig {
+        match File::open(Self::config_dir().as_str()) {
+            Ok(mut file) => {
+                let mut contents = String::new();
+
+                match file.read_to_string(&mut contents) {
+                    Ok(_) => match toml::from_str::<TomlConfig>(&contents) {
+                        Ok(config) => return config,
+                        Err(e) => {
+                            println!("Could not read contents to string: {e}");
+                            std::process::exit(0x1000);
+                        }
+                    },
+                    Err(e) => {
+                        println!("Config file contents not found: {e}");
+                        std::process::exit(0x1000);
+                    }
+                }
+            }
+
+            Err(e) => {
+                println!("Config file not found: {e}");
+                std::process::exit(0x1000);
+            }
+        };
+    }
+
+    fn match_command(cli: Cli) {
+        match &cli.command {
+            Commands::Open { file_name } => match Self::run_editor(file_name) {
                 Ok(_) => {}
                 Err(e) => {
                     println!("Command 'rust open' failed: {e}");
@@ -132,7 +185,7 @@ impl Noteiser {
             },
             Commands::Rust { command } => match &command {
                 RustCommands::New { project_name } => {
-                    let location_string = format!("{DEV_DIR}/Rust/{project_name}");
+                    let location_string = format!("{}/Rust/{project_name}", Self::config().dev);
 
                     if let Err(_) = Path::new(&location_string.clone()).canonicalize() {
                         match Self::run_command(
@@ -146,9 +199,9 @@ impl Noteiser {
                             }
                         }
 
-                        match self
-                            .run_editor(format!("{}/src/main.rs", location_string.clone()).as_str())
-                        {
+                        match Self::run_editor(
+                            format!("{}/src/main.rs", location_string.clone()).as_str(),
+                        ) {
                             Ok(_) => {}
                             Err(e) => {
                                 println!("Command 'rust new' failed: {e}");
@@ -164,24 +217,14 @@ impl Noteiser {
             Commands::Config {
                 command: command_maybe,
             } => {
-                let config_path_str = format!("{}/{CONF_DIR}", self.home.clone().unwrap());
-                let config_path = Path::new(config_path_str.as_str());
-
-                // Check if config location exists
-                let canon_path = config_path.clone().canonicalize();
-
                 match command_maybe {
                     Some(command) => {
                         match command {
                             ConfigCommands::Open => {
-                                if canon_path.is_ok() {
-                                    self.config_open(config_path_str.clone().as_str());
-                                } else {
-                                    println!(
-                                        "Config file not found: {} '{config_path_str}'",
-                                        canon_path.err().unwrap()
-                                    )
-                                }
+                                Self::config_open();
+                            }
+                            ConfigCommands::Get => {
+                                println!("{:?}", Self::config());
                             } // ConfigCommands::Setup => {
                               //     // TODO fix this
 
@@ -208,16 +251,7 @@ impl Noteiser {
                               // }
                         }
                     }
-                    None => {
-                        if canon_path.is_ok() {
-                            self.config_open(config_path_str.clone().as_str());
-                        } else {
-                            println!(
-                                "Config file not found: {} '{config_path_str}'",
-                                canon_path.err().unwrap()
-                            )
-                        }
-                    }
+                    None => Self::config_open(),
                 }
             }
         }
@@ -225,7 +259,9 @@ impl Noteiser {
 }
 
 fn main() {
-    let n = Noteiser::new();
+    let cli = Cli::parse();
 
-    n.match_command();
+    println!("{} {}", Noteiser::home(), Noteiser::config_dir());
+
+    Noteiser::start(cli);
 }
