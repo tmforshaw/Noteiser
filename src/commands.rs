@@ -53,14 +53,35 @@ pub fn match_command(cli: Cli) {
     }
 }
 
+pub fn error_fn<'a>(message: &'a str) -> ! {
+    println!("{message}");
+    std::process::exit(0x1000);
+}
+
 #[macro_export]
 macro_rules! error {
         ($($arg:tt)*) => {
-        $crate::commands::error_func(std::format!("{}", std::format_args!($($arg)*)).as_str())
+        $crate::commands::error_fn(std::format!("{}", std::format_args!($($arg)*)).as_str())
     };
 }
 
-pub fn error_func<'a>(message: &'a str) -> ! {
-    println!("{message}");
-    std::process::exit(0x1000);
+pub fn confirm_fn<'a>(message: &'a str) -> bool {
+    println!("Are you sure you want to {message}? [y/N]");
+
+    // Get user input
+    let mut input = String::new();
+    match std::io::stdin().read_line(&mut input) {
+        Ok(_) => match input.to_string().trim().to_lowercase().as_str() {
+            "y" => return true,
+            "n" | _ => return false,
+        },
+        Err(e) => error!("Could not parse input: {e}"),
+    }
+}
+
+#[macro_export]
+macro_rules! confirm{
+        ($($arg:tt)*) => {
+        $crate::commands::confirm_fn(std::format!("{}", std::format_args!($($arg)*)).as_str())
+    };
 }

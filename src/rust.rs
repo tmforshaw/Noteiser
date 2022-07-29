@@ -1,13 +1,12 @@
+use std::fs::remove_dir_all;
 use std::path::Path;
 
 use clap::Subcommand;
 
 use crate::commands::{run_command, run_editor};
 use crate::config::{config, TomlConfig};
-use crate::error;
 use crate::getters::verify_filename;
-
-// Show project source directory
+use crate::{confirm, error};
 
 #[derive(Subcommand)]
 pub enum RustCommands {
@@ -27,6 +26,12 @@ pub enum RustCommands {
         #[clap(value_parser)]
         file_name: Option<String>,
     },
+    /// Remove a rust project
+    Rm {
+        /// Name of project to remove
+        #[clap(value_parser)]
+        project_name: String,
+    },
 }
 
 fn project_dir(config: &TomlConfig, project_name: String) -> String {
@@ -39,17 +44,17 @@ fn rust_new(project_name: &String) {
             let filename = project_dir(&config, project_name.clone());
 
             match verify_filename(&filename.clone()) {
-                Some(name) => {
-                    run_command("cargo", vec!["-q", "new", name]);
+                Some(_) => error!("Project '{project_name}' already exists"),
+                None => {
+                    run_command("cargo", vec!["-q", "new", filename.as_str()]);
 
                     println!("Project '{project_name}' created successfully");
 
-                    run_editor(format!("{name}/src/main.rs").as_str());
+                    run_editor(format!("{filename}/src/main.rs").as_str());
                 }
-                None => error!("Project '{project_name}' already exists"),
             }
         }
-        Err(e) => error!("Config file not found: {e}"),
+        Err(e) => error!("{e}"),
     }
 }
 
@@ -77,7 +82,31 @@ fn rust_open(project_name: &String, file_name: &Option<String>) {
                 None => error!("Project or File not found: '{full_filename}'"),
             }
         }
-        Err(e) => error!("Config file not found: {e}"),
+        Err(e) => error!("{e}"),
+    }
+}
+
+fn rust_remove(project_name: &String) {
+    match config() {
+        Ok(config) => {
+            let filename = project_dir(&config, project_name.clone());
+
+            match verify_filename(&filename) {
+                Some(name) => {
+                    if confirm!("remove {project_name}") {
+                        match remove_dir_all(name) {
+                            Ok(_) => println!("Successfully deleted {name}"),
+                            Err(e) => error!("Could not remove project '{name}': {e}"),
+                        }
+                    } else {
+                        // User denies confirmation
+                        std::process::exit(0x1001);
+                    }
+                }
+                None => error!("Project not found: '{filename}'"),
+            }
+        }
+        Err(e) => error!("{e}"),
     }
 }
 
@@ -88,5 +117,6 @@ pub fn match_rust(command: &RustCommands) {
             project_name,
             file_name,
         } => rust_open(project_name, file_name),
+        RustCommands::Rm { project_name } => rust_remove(project_name),
     }
 }
