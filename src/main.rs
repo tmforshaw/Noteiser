@@ -21,13 +21,18 @@ struct Cli {
 #[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 struct TomlConfig {
+    dev: String,
     editor: Option<String>,
     editor_backup: Option<String>,
-    dev: String,
 }
 
 #[derive(Subcommand)]
 enum Commands {
+    /// Edit config
+    Config {
+        #[clap(subcommand)]
+        command: Option<ConfigCommands>,
+    },
     /// Open a file in your editor
     Open {
         /// File to open
@@ -38,11 +43,6 @@ enum Commands {
     Rust {
         #[clap(subcommand)]
         command: RustCommands,
-    },
-    /// Edit config
-    Config {
-        #[clap(subcommand)]
-        command: Option<ConfigCommands>,
     },
 }
 
@@ -58,103 +58,29 @@ enum RustCommands {
 
 #[derive(Subcommand)]
 enum ConfigCommands {
+    /// Get your config file in struct notation
+    Get,
     /// Open up the config file
     Open,
-    Get,
-    // /// Setup the config file
-    // Setup,
+    /// Setup the config file
+    Setup,
 }
 
 struct Noteiser {}
 
 impl Noteiser {
-    fn editor() -> String {
-        if let Some(cli_editor) = Self::cli().editor {
-            cli_editor
-        } else if let Some(conf_editor) = Self::config().editor {
-            conf_editor
-        } else if let Some(conf_editor) = Self::config().editor_backup {
-            conf_editor
-        } else if let Ok(env_editor) = std::env::var("EDITOR") {
-            env_editor
-        } else {
-            println!("No available editors to use");
-            std::process::exit(0x1000);
-        }
-    }
-
     fn cli() -> Cli {
         Cli::parse()
     }
 
-    fn home() -> String {
-        if let Ok(home) = std::env::var("HOME") {
-            home
-        } else {
-            println!("Couldn't find home directory");
-            std::process::exit(0x1000);
-        }
-    }
-
-    fn start(cli: Cli) -> ! {
-        Self::match_command(cli);
-
-        loop {}
-    }
-
-    fn run_command(
-        command: &str,
-        args: Vec<&str>,
-    ) -> Result<std::process::ExitStatus, std::io::Error> {
-        std::process::Command::new(command).args(args).status()
-    }
-
-    fn run_editor(filepath: &str) -> Result<std::process::ExitStatus, std::io::Error> {
-        if let Ok(path) = Path::new(&filepath).canonicalize() {
-            std::process::Command::new(Self::editor().clone())
-                .args(vec![path])
-                .status()
-        } else {
-            Err(std::io::Error::new(
-                std::io::ErrorKind::InvalidInput,
-                format!("Filename was invalid '{}'", filepath).as_str(),
-            ))
-        }
-    }
-
-    fn config_open() {
-        // Open in editor
-        match Self::run_editor(Self::config_dir().as_str()) {
-            Ok(_) => {}
-            Err(e) => {
-                println!("Editor failed to run: {e}");
-                std::process::exit(0x1000);
-            }
-        };
-    }
-
-    fn config_dir() -> String {
-        let path_string = format!("{}/{CONF_DIR}", Self::home());
-        let path = Path::new(path_string.as_str());
-
-        // Check if config location exists
-        match path.clone().canonicalize() {
-            Ok(_) => return path_string,
-            Err(_) => {
-                println!("Couldn't find config directory");
-                std::process::exit(0x1000);
-            }
-        }
-    }
-
-    fn config() -> TomlConfig {
+    fn config() -> Result<TomlConfig, String> {
         match File::open(Self::config_dir().as_str()) {
             Ok(mut file) => {
                 let mut contents = String::new();
 
                 match file.read_to_string(&mut contents) {
                     Ok(_) => match toml::from_str::<TomlConfig>(&contents) {
-                        Ok(config) => return config,
+                        Ok(config) => return Ok(config),
                         Err(e) => {
                             println!("Could not read contents to string: {e}");
                             std::process::exit(0x1000);
@@ -167,101 +93,167 @@ impl Noteiser {
                 }
             }
 
-            Err(e) => {
-                println!("Config file not found: {e}");
+            Err(e) => Err(format!("Config file not found: {e}")),
+        }
+    }
+
+    fn config_dir() -> String {
+        let path_string = format!("{}/{CONF_DIR}", Self::home());
+
+        // Check if config location exists
+        match Self::verify_filename(path_string.as_str()) {
+            Some(_) => return path_string.trim().to_string(),
+            None => {
+                println!("Couldn't find config directory");
                 std::process::exit(0x1000);
             }
-        };
+        }
+    }
+
+    fn config_open() {
+        Self::run_editor(Self::config_dir().as_str());
+    }
+
+    fn editor() -> String {
+        // TODO add resilliance to this to check if they are valid editors
+
+        if let Some(cli_editor) = Self::cli().editor {
+            return cli_editor;
+        }
+
+        if let Ok(config) = Self::config() {
+            if let Some(conf_editor) = config.editor {
+                return conf_editor;
+            } else if let Some(conf_editor_backup) = config.editor_backup {
+                return conf_editor_backup;
+            } else if let Ok(env_editor) = std::env::var("EDITOR") {
+                return env_editor;
+            }
+        }
+
+        if let Ok(env_editor) = std::env::var("EDITOR") {
+            env_editor
+        } else {
+            println!("No available editors to use");
+            std::process::exit(0x1000);
+        }
+    }
+
+    fn home() -> String {
+        match std::env::var("HOME") {
+            Ok(home) => home,
+            Err(e) => {
+                println!("Couldn't find home directory: {e}");
+                std::process::exit(0x1000);
+            }
+        }
     }
 
     fn match_command(cli: Cli) {
         match &cli.command {
-            Commands::Open { file_name } => match Self::run_editor(file_name) {
-                Ok(_) => {}
-                Err(e) => {
-                    println!("Command 'rust open' failed: {e}");
-                    std::process::exit(0x1000);
-                }
-            },
+            Commands::Open { file_name } => {
+                Self::run_editor(file_name);
+                std::process::exit(0x1000);
+            }
             Commands::Rust { command } => match &command {
-                RustCommands::New { project_name } => {
-                    let location_string = format!("{}/Rust/{project_name}", Self::config().dev);
+                RustCommands::New { project_name } => match Self::config() {
+                    Ok(config) => {
+                        let filename_string = format!("{}/Rust/{project_name}", config.dev);
 
-                    if let Err(_) = Path::new(&location_string.clone()).canonicalize() {
-                        match Self::run_command(
-                            "cargo",
-                            vec!["-q", "new", location_string.clone().as_str()],
-                        ) {
-                            Ok(_) => println!("Project '{project_name}' created successfully"),
-                            Err(e) => {
-                                println!("Cargo error: {e}");
+                        match Self::verify_filename(&filename_string.clone()) {
+                            Some(name) => {
+                                Self::run_command("cargo", vec!["-q", "new", name]);
+
+                                println!("Project '{project_name}' created successfully");
+
+                                Self::run_editor(format!("{name}/src/main.rs").as_str());
+                            }
+                            None => {
+                                println!("Project '{project_name}' already exists");
                                 std::process::exit(0x1000);
                             }
                         }
-
-                        match Self::run_editor(
-                            format!("{}/src/main.rs", location_string.clone()).as_str(),
-                        ) {
-                            Ok(_) => {}
-                            Err(e) => {
-                                println!("Command 'rust new' failed: {e}");
-                                std::process::exit(0x1000);
-                            }
-                        }
-                    } else {
-                        println!("Project '{project_name}' already exists");
+                    }
+                    Err(e) => {
+                        println!("Config file not found: {e}");
                         std::process::exit(0x1000);
                     }
-                }
+                },
             },
             Commands::Config {
                 command: command_maybe,
-            } => {
-                match command_maybe {
-                    Some(command) => {
-                        match command {
-                            ConfigCommands::Open => {
-                                Self::config_open();
-                            }
-                            ConfigCommands::Get => {
-                                println!("{:?}", Self::config());
-                            } // ConfigCommands::Setup => {
-                              //     // TODO fix this
-
-                              //     if canon_path.is_err() {
-                              //         Self::run_command(
-                              //             "mkdir",
-                              //             vec![
-                              //                 "-p",
-                              //                 format!("{}/.config/noteiser", self.home.clone().unwrap())
-                              //                     .as_str(),
-                              //             ],
-                              //         )
-                              //         .unwrap();
-
-                              //         Self::run_command(
-                              //             self.editor.clone().as_str(),
-                              //             vec![config_path_str.as_str()],
-                              //         )
-                              //         .unwrap();
-                              //     } else {
-                              //         println!("Config already created");
-                              //         std::process::exit(0x1000);
-                              //     }
-                              // }
-                        }
+            } => match command_maybe {
+                Some(command) => match command {
+                    ConfigCommands::Open => {
+                        Self::config_open();
                     }
-                    None => Self::config_open(),
-                }
+                    ConfigCommands::Get => match Self::config() {
+                        Ok(config) => println!("{:#?}", config),
+                        Err(e) => {
+                            println!("{e}");
+                            std::process::exit(0x1000);
+                        }
+                    },
+                    ConfigCommands::Setup => match Self::config() {
+                        Ok(_) => {
+                            println!("Config file already exists");
+                            std::process::exit(0x1000);
+                        }
+                        Err(_) => {
+                            let config_path_string = format!("{}/.config/noteiser", Self::home());
+
+                            Self::run_command("mkdir", vec!["-p", config_path_string.as_str()]);
+
+                            Self::run_editor(config_path_string.as_str());
+                        }
+                    },
+                },
+                None => Self::config_open(),
+            },
+        }
+    }
+
+    fn run_command(command: &str, args: Vec<&str>) {
+        match std::process::Command::new(command)
+            .args(args.clone())
+            .status()
+        {
+            Ok(_) => {}
+            Err(e) => {
+                println!(
+                    "Could not run command: '{command}' with args: {:?}\n Error: {e}",
+                    args
+                );
+                std::process::exit(0x1000);
             }
+        }
+    }
+
+    fn run_editor(filepath: &str) {
+        match Self::verify_filename(filepath) {
+            Some(name) => Self::run_command(Self::editor().clone().as_str(), vec![name]),
+            None => {
+                println!("Editor could not find file '{filepath}'");
+                std::process::exit(0x1000);
+            }
+        }
+    }
+
+    fn start(cli: Cli) {
+        Self::match_command(cli);
+    }
+
+    fn verify_filename<'a>(filename: &'a str) -> Option<&'a str> {
+        // Check if config location exists
+        match Path::new(filename).canonicalize() {
+            Ok(_) => Some(filename.trim()),
+            Err(_) => None,
         }
     }
 }
 
 fn main() {
     let cli = Cli::parse();
-
-    println!("{} {}", Noteiser::home(), Noteiser::config_dir());
 
     Noteiser::start(cli);
 }
