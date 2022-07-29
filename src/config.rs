@@ -10,7 +10,7 @@ use clap::Subcommand;
 
 #[allow(dead_code)]
 #[derive(Debug, Deserialize)]
-pub struct TomlConfig {
+pub struct TomlConf {
     pub dev: String,
     pub editor: Option<String>,
     pub editor_backup: Option<String>,
@@ -29,13 +29,13 @@ pub enum ConfigCommands {
 
 const CONF_DIR: &str = ".config/noteiser/config.toml";
 
-pub fn config() -> Result<TomlConfig, String> {
+pub fn config() -> Result<TomlConf, String> {
     match File::open(config_dir().as_str()) {
         Ok(mut file) => {
             let mut contents = String::new();
 
             match file.read_to_string(&mut contents) {
-                Ok(_) => match toml::from_str::<TomlConfig>(&contents) {
+                Ok(_) => match toml::from_str::<TomlConf>(&contents) {
                     Ok(config) => Ok(config),
                     Err(e) => error!("Could not read contents to string: {e}"),
                 },
@@ -46,7 +46,7 @@ pub fn config() -> Result<TomlConfig, String> {
     }
 }
 
-#[must_use] pub fn config_dir() -> String {
+pub fn config_dir() -> String {
     let path_string = format!("{}/{CONF_DIR}", home());
 
     // Check if config location exists
@@ -75,7 +75,7 @@ pub fn match_config(command_maybe: &Option<ConfigCommands>) {
                 Err(_) => {
                     let config_path_string = format!("{}/.config/noteiser", home());
 
-                    run_command("mkdir", vec!["-p", config_path_string.as_str()]);
+                    run_command("mkdir", &vec!["-p", config_path_string.as_str()]);
 
                     run_editor(config_path_string.as_str());
                 }

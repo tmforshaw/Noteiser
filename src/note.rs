@@ -30,7 +30,7 @@ fn note_new(filename: &String) {
                     match verify_filename(full_path.as_str()) {
                         Some(_) => error!("Note '{filename}' already exists"),
                         None => {
-                            run_command("touch", vec![full_path.as_str()]);
+                            run_command("touch", &vec![full_path.as_str()]);
 
                             run_editor(full_path.as_str());
                         }

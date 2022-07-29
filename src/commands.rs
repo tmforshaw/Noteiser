@@ -31,7 +31,7 @@ pub enum Commands {
     },
 }
 
-pub fn run_command(command: &str, args: Vec<&str>) {
+pub fn run_command(command: &str, args: &Vec<&str>) {
     match std::process::Command::new(command)
         .args(args.clone())
         .status()
@@ -46,12 +46,12 @@ pub fn run_command(command: &str, args: Vec<&str>) {
 
 pub fn run_editor(filepath: &str) {
     match verify_filename(filepath) {
-        Some(name) => run_command(editor().as_str(), vec![name]),
+        Some(name) => run_command(editor().as_str(), &vec![name]),
         None => error!("Editor could not find file '{filepath}'"),
     }
 }
 
-pub fn match_command(cli: Cli) {
+pub fn match_command(cli: &Cli) {
     match &cli.command {
         Commands::Open { file_name } => run_editor(file_name.as_str()),
         Commands::Rust { command } => match_rust(command),
@@ -60,7 +60,7 @@ pub fn match_command(cli: Cli) {
     }
 }
 
-pub fn error_fn<'a>(message: &'a str) -> ! {
+pub fn error_fn(message: &str) -> ! {
     println!("{message}");
     std::process::exit(0x1000);
 }
@@ -72,16 +72,14 @@ macro_rules! error {
     };
 }
 
-#[must_use] pub fn confirm_fn<'a>(message: &'a str) -> bool {
+#[must_use]
+pub fn confirm_fn(message: &str) -> bool {
     println!("Are you sure you want to {message}? [y/N]");
 
     // Get user input
     let mut input = String::new();
     match std::io::stdin().read_line(&mut input) {
-        Ok(_) => match input.to_string().trim().to_lowercase().as_str() {
-            "y" => true,
-            "n" | _ => false,
-        },
+        Ok(_) => matches!(input.to_string().trim().to_lowercase().as_str(), "y"),
         Err(e) => error!("Could not parse input: {e}"),
     }
 }

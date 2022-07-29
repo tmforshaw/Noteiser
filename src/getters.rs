@@ -17,11 +17,13 @@ pub struct Cli {
     pub command: Commands,
 }
 
-#[must_use] pub fn cli() -> Cli {
+#[must_use]
+pub fn cli() -> Cli {
     Cli::parse()
 }
 
-#[must_use] pub fn editor() -> String {
+#[must_use]
+pub fn editor() -> String {
     // TODO add resilliance to this to check if they are valid editors
 
     if let Some(cli_editor) = cli().editor {
@@ -45,14 +47,16 @@ pub struct Cli {
     }
 }
 
-#[must_use] pub fn home() -> String {
+#[must_use]
+pub fn home() -> String {
     match std::env::var("HOME") {
         Ok(home) => home,
         Err(e) => error!("Couldn't find home directory: {e}"),
     }
 }
 
-#[must_use] pub fn verify_filename<'a>(filename: &'a str) -> Option<&'a str> {
+#[must_use]
+pub fn verify_filename<'a>(filename: &'a str) -> Option<&'a str> {
     // Check if config location exists
     match Path::new(filename).canonicalize() {
         Ok(_) => Some(filename.trim()),

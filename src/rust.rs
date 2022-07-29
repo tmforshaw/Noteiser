@@ -4,7 +4,7 @@ use std::path::Path;
 use clap::Subcommand;
 
 use crate::commands::{run_command, run_editor};
-use crate::config::{config, TomlConfig};
+use crate::config::{config, TomlConf};
 use crate::getters::verify_filename;
 use crate::{confirm, error};
 
@@ -34,7 +34,7 @@ pub enum RustCommands {
     },
 }
 
-fn project_dir(config: &TomlConfig, project_name: String) -> String {
+fn project_dir(config: &TomlConf, project_name: String) -> String {
     format!("{}/Rust/{project_name}", config.dev)
 }
 
@@ -46,7 +46,7 @@ fn rust_new(project_name: &String) {
             match verify_filename(&filename) {
                 Some(_) => error!("Project '{project_name}' already exists"),
                 None => {
-                    run_command("cargo", vec!["-q", "new", filename.as_str()]);
+                    run_command("cargo", &vec!["-q", "new", filename.as_str()]);
 
                     println!("Project '{project_name}' created successfully");
 
@@ -61,12 +61,12 @@ fn rust_new(project_name: &String) {
 fn rust_open(project_name: &String, file_name: &Option<String>) {
     match config() {
         Ok(config) => {
-            let filename = match file_name {
-                Some(file) => {
+            let path_name = match file_name {
+                Some(path) => {
                     format!(
                         "{project_name}/src/{}{}",
-                        file,
-                        match Path::new(file).extension() {
+                        path,
+                        match Path::new(path).extension() {
                             Some(_) => "",
                             None => ".rs",
                         }
@@ -75,7 +75,7 @@ fn rust_open(project_name: &String, file_name: &Option<String>) {
                 None => project_name.clone(),
             };
 
-            let full_filename = project_dir(&config, filename);
+            let full_filename = project_dir(&config, path_name);
 
             match verify_filename(&full_filename) {
                 Some(name) => run_editor(name),
