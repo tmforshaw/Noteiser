@@ -4,6 +4,7 @@ use clap::Parser;
 
 use crate::commands::Commands;
 use crate::config::config;
+use crate::error;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None, propagate_version = true )]
@@ -40,18 +41,14 @@ pub fn editor() -> String {
     if let Ok(env_editor) = std::env::var("EDITOR") {
         env_editor
     } else {
-        println!("No available editors to use");
-        std::process::exit(0x1000);
+        error!("No available editors to use");
     }
 }
 
 pub fn home() -> String {
     match std::env::var("HOME") {
         Ok(home) => home,
-        Err(e) => {
-            println!("Couldn't find home directory: {e}");
-            std::process::exit(0x1000);
-        }
+        Err(e) => error!("Couldn't find home directory: {e}"),
     }
 }
 

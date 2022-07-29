@@ -3,6 +3,7 @@ use std::fs::File;
 use std::io::prelude::*;
 
 use crate::commands::{run_command, run_editor};
+use crate::error;
 use crate::getters::{home, verify_filename};
 
 use clap::Subcommand;
@@ -35,18 +36,11 @@ pub fn config() -> Result<TomlConfig, String> {
             match file.read_to_string(&mut contents) {
                 Ok(_) => match toml::from_str::<TomlConfig>(&contents) {
                     Ok(config) => return Ok(config),
-                    Err(e) => {
-                        println!("Could not read contents to string: {e}");
-                        std::process::exit(0x1000);
-                    }
+                    Err(e) => error!("Could not read contents to string: {e}"),
                 },
-                Err(e) => {
-                    println!("Config file contents not found: {e}");
-                    std::process::exit(0x1000);
-                }
+                Err(e) => error!("Config file contents not found: {e}"),
             }
         }
-
         Err(e) => Err(format!("Config file not found: {e}")),
     }
 }
@@ -57,10 +51,7 @@ pub fn config_dir() -> String {
     // Check if config location exists
     match verify_filename(path_string.as_str()) {
         Some(_) => return path_string.trim().to_string(),
-        None => {
-            println!("Couldn't find config directory");
-            std::process::exit(0x1000);
-        }
+        None => error!("Couldn't find config directory"),
     }
 }
 
@@ -76,16 +67,10 @@ pub fn match_config(command_maybe: &Option<ConfigCommands>) {
             }
             ConfigCommands::Get => match config() {
                 Ok(config) => println!("{:#?}", config),
-                Err(e) => {
-                    println!("{e}");
-                    std::process::exit(0x1000);
-                }
+                Err(e) => error!("{e}"),
             },
             ConfigCommands::Setup => match config() {
-                Ok(_) => {
-                    println!("Config file already exists");
-                    std::process::exit(0x1000);
-                }
+                Ok(_) => error!("Config file already exists"),
                 Err(_) => {
                     let config_path_string = format!("{}/.config/noteiser", home());
 
