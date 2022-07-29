@@ -43,7 +43,7 @@ fn rust_new(project_name: &String) {
         Ok(config) => {
             let filename = project_dir(&config, project_name.clone());
 
-            match verify_filename(&filename.clone()) {
+            match verify_filename(&filename) {
                 Some(_) => error!("Project '{project_name}' already exists"),
                 None => {
                     run_command("cargo", vec!["-q", "new", filename.as_str()]);
@@ -75,9 +75,9 @@ fn rust_open(project_name: &String, file_name: &Option<String>) {
                 None => project_name.clone(),
             };
 
-            let full_filename = project_dir(&config, filename.clone());
+            let full_filename = project_dir(&config, filename);
 
-            match verify_filename(&full_filename.clone()) {
+            match verify_filename(&full_filename) {
                 Some(name) => run_editor(name),
                 None => error!("Project or File not found: '{full_filename}'"),
             }

@@ -36,7 +36,7 @@ pub fn config() -> Result<TomlConfig, String> {
 
             match file.read_to_string(&mut contents) {
                 Ok(_) => match toml::from_str::<TomlConfig>(&contents) {
-                    Ok(config) => return Ok(config),
+                    Ok(config) => Ok(config),
                     Err(e) => error!("Could not read contents to string: {e}"),
                 },
                 Err(e) => error!("Config file contents not found: {e}"),
@@ -46,7 +46,7 @@ pub fn config() -> Result<TomlConfig, String> {
     }
 }
 
-pub fn config_dir() -> String {
+#[must_use] pub fn config_dir() -> String {
     let path_string = format!("{}/{CONF_DIR}", home());
 
     // Check if config location exists

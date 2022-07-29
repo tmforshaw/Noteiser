@@ -46,7 +46,7 @@ pub fn run_command(command: &str, args: Vec<&str>) {
 
 pub fn run_editor(filepath: &str) {
     match verify_filename(filepath) {
-        Some(name) => run_command(editor().clone().as_str(), vec![name]),
+        Some(name) => run_command(editor().as_str(), vec![name]),
         None => error!("Editor could not find file '{filepath}'"),
     }
 }
@@ -72,15 +72,15 @@ macro_rules! error {
     };
 }
 
-pub fn confirm_fn<'a>(message: &'a str) -> bool {
+#[must_use] pub fn confirm_fn<'a>(message: &'a str) -> bool {
     println!("Are you sure you want to {message}? [y/N]");
 
     // Get user input
     let mut input = String::new();
     match std::io::stdin().read_line(&mut input) {
         Ok(_) => match input.to_string().trim().to_lowercase().as_str() {
-            "y" => return true,
-            "n" | _ => return false,
+            "y" => true,
+            "n" | _ => false,
         },
         Err(e) => error!("Could not parse input: {e}"),
     }
