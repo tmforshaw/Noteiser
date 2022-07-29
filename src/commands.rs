@@ -3,6 +3,7 @@ use clap::Subcommand;
 use crate::config::{match_config, ConfigCommands};
 use crate::error;
 use crate::getters::{editor, verify_filename, Cli};
+use crate::note::{match_note, NoteCommands};
 use crate::rust::{match_rust, RustCommands};
 
 #[derive(Subcommand)]
@@ -22,6 +23,11 @@ pub enum Commands {
     Rust {
         #[clap(subcommand)]
         command: RustCommands,
+    },
+    /// Note taking functions
+    Note {
+        #[clap(subcommand)]
+        command: NoteCommands,
     },
 }
 
@@ -50,6 +56,7 @@ pub fn match_command(cli: Cli) {
         Commands::Open { file_name } => run_editor(file_name.as_str()),
         Commands::Rust { command } => match_rust(command),
         Commands::Config { command } => match_config(command),
+        Commands::Note { command } => match_note(command),
     }
 }
 

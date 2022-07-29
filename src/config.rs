@@ -14,6 +14,7 @@ pub struct TomlConfig {
     pub dev: String,
     pub editor: Option<String>,
     pub editor_backup: Option<String>,
+    pub note: Option<String>,
 }
 
 #[derive(Subcommand)]

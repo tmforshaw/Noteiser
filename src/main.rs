@@ -1,6 +1,7 @@
 pub mod commands;
 pub mod config;
 pub mod getters;
+pub mod note;
 pub mod rust;
 
 use commands::match_command;
