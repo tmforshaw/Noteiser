@@ -21,7 +21,10 @@ pub enum NoteCommands {
 fn note_new(filename: &String) {
     match config() {
         Ok(config) => {
-            let unshortened_path = config.note.expect("No notes directory set");
+            let unshortened_path = match config.note {
+                Some(path) => path,
+                None => error!("No notes directory set"),
+            };
 
             // Directory exists
             match verify_filename(unshortened_path.as_str()) {

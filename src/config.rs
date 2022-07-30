@@ -46,6 +46,7 @@ pub fn config() -> Result<TomlConf, String> {
     }
 }
 
+#[must_use]
 pub fn config_dir() -> String {
     let path_string = format!("{}/{CONF_DIR}", home());
 
@@ -70,16 +71,17 @@ pub fn match_config(command_maybe: &Option<ConfigCommands>) {
                 Ok(config) => println!("{:#?}", config),
                 Err(e) => error!("{e}"),
             },
-            ConfigCommands::Setup => match config() {
-                Ok(_) => error!("Config file already exists"),
-                Err(_) => {
+            ConfigCommands::Setup => {
+                if config().is_ok() {
+                    error!("Config file already exists")
+                } else {
                     let config_path_string = format!("{}/.config/noteiser", home());
 
                     run_command("mkdir", &vec!["-p", config_path_string.as_str()]);
 
                     run_editor(config_path_string.as_str());
                 }
-            },
+            }
         },
         None => config_open(),
     }

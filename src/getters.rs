@@ -56,7 +56,7 @@ pub fn home() -> String {
 }
 
 #[must_use]
-pub fn verify_filename<'a>(filename: &'a str) -> Option<&'a str> {
+pub fn verify_filename(filename: &str) -> Option<&str> {
     // Check if config location exists
     match Path::new(filename).canonicalize() {
         Ok(_) => Some(filename.trim()),
