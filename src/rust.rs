@@ -4,12 +4,12 @@ use std::path::Path;
 use clap::Subcommand;
 
 use crate::commands::{run_command, run_editor};
-use crate::config::{config, TomlConf};
+use crate::config;
 use crate::getters::{list_files, verify_filename};
 use crate::{confirm, error};
 
 #[derive(Subcommand)]
-pub enum RustCommands {
+pub enum Commands {
     /// Create a new rust project
     New {
         /// Name of project to create
@@ -36,12 +36,12 @@ pub enum RustCommands {
     },
 }
 
-fn project_dir(config: &TomlConf, project_name: &String) -> String {
+fn project_dir(config: &config::Toml, project_name: &String) -> String {
     format!("{}/Rust/{project_name}", config.dev)
 }
 
 fn rust_new(project_name: &String) {
-    match config() {
+    match config::get() {
         Ok(config) => {
             let filename = project_dir(&config, project_name);
 
@@ -61,7 +61,7 @@ fn rust_new(project_name: &String) {
 }
 
 fn rust_open(project_name: &String, file_name: &Option<String>) {
-    match config() {
+    match config::get() {
         Ok(config) => {
             let path_name = match file_name {
                 Some(path) => {
@@ -89,7 +89,7 @@ fn rust_open(project_name: &String, file_name: &Option<String>) {
 }
 
 fn rust_list() {
-    match config() {
+    match config::get() {
         Ok(config) => {
             let dev_dir = project_dir(&config, &String::new());
 
@@ -103,7 +103,7 @@ fn rust_list() {
 }
 
 fn rust_remove(project_name: &String) {
-    match config() {
+    match config::get() {
         Ok(config) => {
             let filename = project_dir(&config, project_name);
 
@@ -126,14 +126,14 @@ fn rust_remove(project_name: &String) {
     }
 }
 
-pub fn match_rust(command: &RustCommands) {
+pub fn parse_command(command: &Commands) {
     match &command {
-        RustCommands::New { project_name } => rust_new(project_name),
-        RustCommands::Open {
+        Commands::New { project_name } => rust_new(project_name),
+        Commands::Open {
             project_name,
             file_name,
         } => rust_open(project_name, file_name),
-        RustCommands::List => rust_list(),
-        RustCommands::Rm { project_name } => rust_remove(project_name),
+        Commands::List => rust_list(),
+        Commands::Rm { project_name } => rust_remove(project_name),
     }
 }

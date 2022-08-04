@@ -4,7 +4,7 @@ use std::path::Path;
 use clap::Parser;
 
 use crate::commands::Commands;
-use crate::config::config;
+use crate::config;
 use crate::error;
 
 // TODO fix naming system
@@ -33,7 +33,7 @@ pub fn editor() -> String {
         return cli_editor;
     }
 
-    if let Ok(config) = config() {
+    if let Ok(config) = config::get() {
         if let Some(conf_editor) = config.editor {
             return conf_editor;
         } else if let Some(conf_editor_backup) = config.editor_backup {

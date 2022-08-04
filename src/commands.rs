@@ -1,17 +1,17 @@
 use clap::Subcommand;
 
-use crate::config::{match_config, ConfigCommands};
+use crate::config;
 use crate::error;
 use crate::getters::{editor, verify_filename, Cli};
-use crate::note::{match_note, NoteCommands};
-use crate::rust::{match_rust, RustCommands};
+use crate::note;
+use crate::rust;
 
 #[derive(Subcommand)]
 pub enum Commands {
     /// Edit config
     Config {
         #[clap(subcommand)]
-        command: Option<ConfigCommands>,
+        command: Option<config::Commands>,
     },
     /// Open a file in your editor using non shortned-notation
     Open {
@@ -22,12 +22,12 @@ pub enum Commands {
     /// Rust specific functions
     Rust {
         #[clap(subcommand)]
-        command: RustCommands,
+        command: rust::Commands,
     },
     /// Note taking functions
     Note {
         #[clap(subcommand)]
-        command: NoteCommands,
+        command: note::Commands,
     },
 }
 
@@ -54,9 +54,9 @@ pub fn run_editor(filepath: &str) {
 pub fn match_command(cli: &Cli) {
     match &cli.command {
         Commands::Open { file_name } => run_editor(file_name.as_str()),
-        Commands::Rust { command } => match_rust(command),
-        Commands::Config { command } => match_config(command),
-        Commands::Note { command } => match_note(command),
+        Commands::Rust { command } => rust::parse_command(command),
+        Commands::Config { command } => config::parse_command(command),
+        Commands::Note { command } => note::parse_command(command),
     }
 }
 

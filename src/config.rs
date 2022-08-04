@@ -10,7 +10,7 @@ use clap::Subcommand;
 
 #[allow(dead_code)]
 #[derive(Debug, Deserialize)]
-pub struct TomlConf {
+pub struct Toml {
     pub dev: String,
     pub editor: Option<String>,
     pub editor_backup: Option<String>,
@@ -18,7 +18,7 @@ pub struct TomlConf {
 }
 
 #[derive(Subcommand)]
-pub enum ConfigCommands {
+pub enum Commands {
     /// Get your config file in struct notation
     Get,
     /// Open up the config file
@@ -32,13 +32,13 @@ const CONF_DIR: &str = ".config/noteiser/config.toml";
 /// # Errors
 ///
 /// Will return `Err` if config file does not exist or can't be read
-pub fn config() -> Result<TomlConf, String> {
-    match File::open(config_dir().as_str()) {
+pub fn get() -> Result<Toml, String> {
+    match File::open(get_dir().as_str()) {
         Ok(mut file) => {
             let mut contents = String::new();
 
             match file.read_to_string(&mut contents) {
-                Ok(_) => match toml::from_str::<TomlConf>(&contents) {
+                Ok(_) => match toml::from_str::<Toml>(&contents) {
                     Ok(config) => Ok(config),
                     Err(e) => error!("Could not read contents to string: {e}"),
                 },
@@ -51,7 +51,7 @@ pub fn config() -> Result<TomlConf, String> {
 }
 
 #[must_use]
-pub fn config_dir() -> String {
+pub fn get_dir() -> String {
     let path_string = format!("{}/{CONF_DIR}", home());
 
     // Check if config location exists
@@ -61,22 +61,22 @@ pub fn config_dir() -> String {
     }
 }
 
-pub fn config_open() {
-    run_editor(config_dir().as_str());
+pub fn open_in_editor() {
+    run_editor(get_dir().as_str());
 }
 
-pub fn match_config(command_maybe: &Option<ConfigCommands>) {
+pub fn parse_command(command_maybe: &Option<Commands>) {
     match command_maybe {
         Some(command) => match command {
-            ConfigCommands::Open => {
-                config_open();
+            Commands::Open => {
+                open_in_editor();
             }
-            ConfigCommands::Get => match config() {
+            Commands::Get => match get() {
                 Ok(config) => println!("{:#?}", config),
                 Err(e) => error!("{e}"),
             },
-            ConfigCommands::Setup => {
-                if config().is_ok() {
+            Commands::Setup => {
+                if get().is_ok() {
                     error!("Config file already exists")
                 } else {
                     let config_path_string = format!("{}/.config/noteiser", home());
@@ -87,6 +87,6 @@ pub fn match_config(command_maybe: &Option<ConfigCommands>) {
                 }
             }
         },
-        None => config_open(),
+        None => open_in_editor(),
     }
 }

@@ -3,13 +3,12 @@ use std::path::Path;
 
 use crate::{
     commands::{run_command, run_editor},
-    config::config,
-    error,
+    config, error,
     getters::{list_files, verify_filename},
 };
 
 #[derive(Subcommand)]
-pub enum NoteCommands {
+pub enum Commands {
     /// Create a new note
     New {
         #[clap(value_parser)]
@@ -34,7 +33,7 @@ fn check_extension(filename: &String) -> String {
 }
 
 fn note_new(filename: &String) {
-    match config() {
+    match config::get() {
         Ok(config) => {
             let dir_path = match config.note {
                 Some(path) => path,
@@ -65,7 +64,7 @@ fn note_new(filename: &String) {
 }
 
 fn note_open(filename: &String) {
-    match config() {
+    match config::get() {
         Ok(config) => {
             let dir_path = match config.note {
                 Some(path) => path,
@@ -92,7 +91,7 @@ fn note_open(filename: &String) {
 }
 
 fn note_list() {
-    match config() {
+    match config::get() {
         Ok(config) => {
             let notes_dir = match config.note {
                 Some(path) => path,
@@ -105,10 +104,10 @@ fn note_list() {
     }
 }
 
-pub fn match_note(command: &NoteCommands) {
+pub fn parse_command(command: &Commands) {
     match command {
-        NoteCommands::New { file_name } => note_new(file_name),
-        NoteCommands::Open { file_name } => note_open(file_name),
-        NoteCommands::List => note_list(),
+        Commands::New { file_name } => note_new(file_name),
+        Commands::Open { file_name } => note_open(file_name),
+        Commands::List => note_list(),
     };
 }
