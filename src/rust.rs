@@ -94,7 +94,7 @@ fn rust_list() {
             let dev_dir = project_dir(&config, &String::new());
 
             match verify_filename(&dev_dir) {
-                Some(directory) => println!("{}", list_files(directory.to_string())),
+                Some(directory) => println!("{}", list_files(&directory.to_string())),
                 None => error!("Development directory not found: '{dev_dir}'"),
             }
         }

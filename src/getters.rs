@@ -50,8 +50,9 @@ pub fn editor() -> String {
     }
 }
 
-pub fn list_files(directory: String) -> String {
-    let dir_paths = match fs::read_dir(directory.clone()) {
+#[must_use]
+pub fn list_files(directory: &String) -> String {
+    let dir_paths = match fs::read_dir(directory) {
         Ok(read_dir_path) => read_dir_path,
         Err(e) => error!("Error while finding files: {e}"),
     };
@@ -63,7 +64,7 @@ pub fn list_files(directory: String) -> String {
             Ok(file) => {
                 let file_path = file.path();
 
-                let file_name = match file_path.strip_prefix(directory.clone()) {
+                let file_name = match file_path.strip_prefix(directory) {
                     Ok(stripped_file_name) => stripped_file_name,
                     Err(e) => error!(
                         "Could not get file name from path '{}': {e}",

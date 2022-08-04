@@ -99,7 +99,7 @@ fn note_list() {
                 None => error!("No notes directory set"),
             };
 
-            println!("{}", list_files(notes_dir));
+            println!("{}", list_files(&notes_dir));
         }
         Err(e) => error!("{e}"),
     }
