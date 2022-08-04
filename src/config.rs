@@ -29,6 +29,9 @@ pub enum ConfigCommands {
 
 const CONF_DIR: &str = ".config/noteiser/config.toml";
 
+/// # Errors
+///
+/// Will return `Err` if config file does not exist or can't be read
 pub fn config() -> Result<TomlConf, String> {
     match File::open(config_dir().as_str()) {
         Ok(mut file) => {
@@ -42,6 +45,7 @@ pub fn config() -> Result<TomlConf, String> {
                 Err(e) => error!("Config file contents not found: {e}"),
             }
         }
+        // No config was found
         Err(e) => Err(format!("Config file not found: {e}")),
     }
 }

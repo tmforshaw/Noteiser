@@ -5,7 +5,7 @@ use clap::Subcommand;
 
 use crate::commands::{run_command, run_editor};
 use crate::config::{config, TomlConf};
-use crate::getters::verify_filename;
+use crate::getters::{list_files, verify_filename};
 use crate::{confirm, error};
 
 #[derive(Subcommand)]
@@ -26,6 +26,8 @@ pub enum RustCommands {
         #[clap(value_parser)]
         file_name: Option<String>,
     },
+    /// List the projects in your rust directory
+    List,
     /// Remove a rust project
     Rm {
         /// Name of project to remove
@@ -86,6 +88,20 @@ fn rust_open(project_name: &String, file_name: &Option<String>) {
     }
 }
 
+fn rust_list() {
+    match config() {
+        Ok(config) => {
+            let dev_dir = project_dir(&config, &String::new());
+
+            match verify_filename(&dev_dir) {
+                Some(directory) => println!("{}", list_files(directory.to_string())),
+                None => error!("Development directory not found: '{dev_dir}'"),
+            }
+        }
+        Err(e) => error!("{e}"),
+    };
+}
+
 fn rust_remove(project_name: &String) {
     match config() {
         Ok(config) => {
@@ -117,6 +133,7 @@ pub fn match_rust(command: &RustCommands) {
             project_name,
             file_name,
         } => rust_open(project_name, file_name),
+        RustCommands::List => rust_list(),
         RustCommands::Rm { project_name } => rust_remove(project_name),
     }
 }

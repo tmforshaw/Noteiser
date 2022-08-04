@@ -1,3 +1,4 @@
+use std::fs;
 use std::path::Path;
 
 use clap::Parser;
@@ -5,6 +6,8 @@ use clap::Parser;
 use crate::commands::Commands;
 use crate::config::config;
 use crate::error;
+
+// TODO fix naming system
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None, propagate_version = true )]
@@ -45,6 +48,41 @@ pub fn editor() -> String {
     } else {
         error!("No available editors to use");
     }
+}
+
+pub fn list_files(directory: String) -> String {
+    let dir_paths = match fs::read_dir(directory.clone()) {
+        Ok(read_dir_path) => read_dir_path,
+        Err(e) => error!("Error while finding files: {e}"),
+    };
+
+    let mut message = format!("Contents of '{directory}':\n");
+
+    for path in dir_paths {
+        match path {
+            Ok(file) => {
+                let file_path = file.path();
+
+                let file_name = match file_path.strip_prefix(directory.clone()) {
+                    Ok(stripped_file_name) => stripped_file_name,
+                    Err(e) => error!(
+                        "Could not get file name from path '{}': {e}",
+                        file_path.display()
+                    ),
+                };
+
+                let file_name_string = match file_name.to_str() {
+                    Some(string) => string,
+                    None => error!("Could not parse file name to string {:?}", file_name),
+                };
+
+                message.push_str(format!("\t{}\n", file_name_string).as_str());
+            }
+            Err(e) => error!("Could not display file: {e}"),
+        }
+    }
+
+    message.trim().to_string()
 }
 
 #[must_use]
