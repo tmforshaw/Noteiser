@@ -102,7 +102,7 @@ pub fn get_matching_files(directory: &String, regex_string: &str) -> Vec<String>
     let filtered_files = files
         .iter()
         .filter(|f| regex.is_match(f))
-        .map(|f| f.clone())
+        .cloned()
         .collect::<Vec<String>>();
 
     filtered_files

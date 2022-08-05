@@ -90,7 +90,7 @@ fn rust_open(project_name: &String, file_name: &Option<String>) {
     }
 }
 
-fn rust_list(project_name: &Option<String>, show_all: &bool) {
+fn rust_list(project_name: &Option<String>, show_all: bool) {
     match config::get() {
         Ok(config) => {
             match project_name {
@@ -100,7 +100,7 @@ fn rust_list(project_name: &Option<String>, show_all: &bool) {
                     match verify_filename(&dev_dir) {
                         Some(directory) => {
                             // Remove hidden files, 'target', and 'src' (if show_all doesn't exist)
-                            let root_files = if show_all.clone() {
+                            let root_files = if show_all {
                                 get_matching_files(&directory.to_string(), ".*")
                             } else {
                                 get_matching_files(&directory.to_string(), r"^[a-zA-Z]")
@@ -154,7 +154,7 @@ fn rust_list(project_name: &Option<String>, show_all: &bool) {
 
                     let script_files = get_matching_files(
                         &format!("{directory}/Scripts"),
-                        if show_all.clone() { ".*" } else { r"^[a-zA-Z]" },
+                        if show_all { ".*" } else { r"^[a-zA-Z]" },
                     );
 
                     println!("\nRust/Scripts");
@@ -200,7 +200,7 @@ pub fn parse_command(command: &Commands) {
             project_name,
             file_name,
         } => rust_open(project_name, file_name),
-        Commands::List { project_name, all } => rust_list(project_name, all),
+        Commands::List { project_name, all } => rust_list(project_name, *all),
         Commands::Rm { project_name } => rust_remove(project_name),
     }
 }
