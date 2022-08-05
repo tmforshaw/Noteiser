@@ -57,12 +57,22 @@ pub fn get_editor() -> String {
 }
 
 #[must_use]
-pub fn get_files_vec(directory: &String) -> Vec<String> {
+pub fn get_files(directory: &String) -> Vec<String> {
+    get_matching_files(directory, r".*")
+}
+
+#[must_use]
+pub fn get_matching_files(directory: &String, regex_string: &str) -> Vec<String> {
     let mut files: Vec<String> = Vec::new();
 
     let dir_paths = match fs::read_dir(directory) {
         Ok(read_dir_path) => read_dir_path,
         Err(e) => error!("Error while finding files: {e}"),
+    };
+
+    let regex = match Regex::new(regex_string) {
+        Ok(re) => re,
+        Err(e) => error!("Error with list regex: {e}"), // User should not receive this message
     };
 
     for path in dir_paths {
@@ -89,40 +99,13 @@ pub fn get_files_vec(directory: &String) -> Vec<String> {
         }
     }
 
-    files
-}
-
-#[must_use]
-pub fn list_vec_files(directory: &String, files: &Vec<&String>) -> String {
-    let mut message = format!("Contents of '{directory}':\n");
-
-    for file in files {
-        message.push_str(format!("\t{}\n", file).as_str());
-    }
-
-    message.trim().to_string()
-}
-
-#[must_use]
-pub fn list_files(directory: &String) -> String {
-    list_matching_files(directory, r".*")
-}
-
-#[must_use]
-pub fn list_matching_files(directory: &String, regex_string: &str) -> String {
-    let files = get_files_vec(directory);
-
-    let regex = match Regex::new(regex_string) {
-        Ok(re) => re,
-        Err(e) => error!("Error with list regex: {e}"), // User should not receive this message
-    };
-
     let filtered_files = files
         .iter()
         .filter(|f| regex.is_match(f))
-        .collect::<Vec<&String>>();
+        .map(|f| f.clone())
+        .collect::<Vec<String>>();
 
-    list_vec_files(directory, &filtered_files)
+    filtered_files
 }
 
 #[must_use]

@@ -3,7 +3,7 @@ use std::path::Path;
 
 use crate::{
     commands::{run_command, run_editor},
-    config, error, {list_files, verify_file_and_dir},
+    config, error, {get_files, verify_file_and_dir},
 };
 
 #[derive(Subcommand)]
@@ -82,7 +82,21 @@ fn note_list() {
                 None => error!("No notes directory set"),
             };
 
-            println!("{}", list_files(&notes_dir));
+            let files = get_files(&notes_dir);
+
+            let shortened_notes_dir = match Path::new(&notes_dir).file_name() {
+                Some(dir) => match dir.to_str() {
+                    Some(string) => string,
+                    None => error!("Could not parse notes directory name into string"),
+                },
+                None => error!("Could not get name of notes directory"),
+            };
+
+            println!("{shortened_notes_dir}/");
+
+            for file in files {
+                println!("\t{file}");
+            }
         }
         Err(e) => error!("{e}"),
     }
