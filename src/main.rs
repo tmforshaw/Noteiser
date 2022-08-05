@@ -93,14 +93,23 @@ pub fn get_files_vec(directory: &String) -> Vec<String> {
 }
 
 #[must_use]
+pub fn list_vec_files(directory: &String, files: &Vec<&String>) -> String {
+    let mut message = format!("Contents of '{directory}':\n");
+
+    for file in files {
+        message.push_str(format!("\t{}\n", file).as_str());
+    }
+
+    message.trim().to_string()
+}
+
+#[must_use]
 pub fn list_files(directory: &String) -> String {
     list_matching_files(directory, r".*")
 }
 
 #[must_use]
 pub fn list_matching_files(directory: &String, regex_string: &str) -> String {
-    let mut message = format!("Contents of '{directory}':\n");
-
     let files = get_files_vec(directory);
 
     let regex = match Regex::new(regex_string) {
@@ -108,13 +117,12 @@ pub fn list_matching_files(directory: &String, regex_string: &str) -> String {
         Err(e) => error!("Error with list regex: {e}"), // User should not receive this message
     };
 
-    let filtered_files_iter = files.iter().filter(|f| regex.is_match(f));
+    let filtered_files = files
+        .iter()
+        .filter(|f| regex.is_match(f))
+        .collect::<Vec<&String>>();
 
-    for file in filtered_files_iter {
-        message.push_str(format!("\t{}\n", file).as_str());
-    }
-
-    message.trim().to_string()
+    list_vec_files(directory, &filtered_files)
 }
 
 #[must_use]
