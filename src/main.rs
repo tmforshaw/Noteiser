@@ -57,23 +57,13 @@ pub fn get_editor() -> String {
 }
 
 #[must_use]
-pub fn list_files(directory: &String) -> String {
-    list_matching_files(directory, r".*")
-}
+pub fn get_files_vec(directory: &String) -> Vec<String> {
+    let mut files: Vec<String> = Vec::new();
 
-#[must_use]
-pub fn list_matching_files(directory: &String, regex_string: &str) -> String {
     let dir_paths = match fs::read_dir(directory) {
         Ok(read_dir_path) => read_dir_path,
         Err(e) => error!("Error while finding files: {e}"),
     };
-
-    let regex = match Regex::new(regex_string) {
-        Ok(re) => re,
-        Err(e) => error!("Error with list regex: {e}"), // User should not receive this message
-    };
-
-    let mut message = format!("Contents of '{directory}':\n");
 
     for path in dir_paths {
         match path {
@@ -93,16 +83,35 @@ pub fn list_matching_files(directory: &String, regex_string: &str) -> String {
                     None => error!("Could not parse file name to string {:?}", file_name),
                 };
 
-                if regex.is_match(file_name_string) {
-                    message.push_str(format!("\t{}\n", file_name_string).as_str());
-                }
+                files.push(file_name_string.to_string());
             }
             Err(e) => error!("Could not display file: {e}"),
         }
     }
 
-    if message.is_empty() {
-        message.push_str("\tNo files found in {directory}");
+    files
+}
+
+#[must_use]
+pub fn list_files(directory: &String) -> String {
+    list_matching_files(directory, r".*")
+}
+
+#[must_use]
+pub fn list_matching_files(directory: &String, regex_string: &str) -> String {
+    let mut message = format!("Contents of '{directory}':\n");
+
+    let files = get_files_vec(directory);
+
+    let regex = match Regex::new(regex_string) {
+        Ok(re) => re,
+        Err(e) => error!("Error with list regex: {e}"), // User should not receive this message
+    };
+
+    let filtered_files_iter = files.iter().filter(|f| regex.is_match(f));
+
+    for file in filtered_files_iter {
+        message.push_str(format!("\t{}\n", file).as_str());
     }
 
     message.trim().to_string()
