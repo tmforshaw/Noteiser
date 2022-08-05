@@ -26,7 +26,10 @@ pub enum Commands {
         file_name: Option<String>,
     },
     /// List the projects in your rust directory
-    List,
+    List {
+        /// Project to list files of
+        project_name: Option<String>,
+    },
     /// Remove a rust project
     Rm {
         /// Name of project to remove
@@ -87,10 +90,15 @@ fn rust_open(project_name: &String, file_name: &Option<String>) {
     }
 }
 
-fn rust_list() {
+fn rust_list(project_name: &Option<String>) {
     match config::get() {
         Ok(config) => {
-            let dev_dir = project_dir(&config, &String::new());
+            let project = match project_name {
+                Some(name) => name.clone(),
+                None => String::new(),
+            };
+
+            let dev_dir = project_dir(&config, &project);
 
             match verify_filename(&dev_dir) {
                 Some(directory) => println!("{}", list_files(&directory.to_string())),
@@ -132,7 +140,7 @@ pub fn parse_command(command: &Commands) {
             project_name,
             file_name,
         } => rust_open(project_name, file_name),
-        Commands::List => rust_list(),
+        Commands::List { project_name } => rust_list(project_name),
         Commands::Rm { project_name } => rust_remove(project_name),
     }
 }

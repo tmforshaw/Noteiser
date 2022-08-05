@@ -13,8 +13,7 @@ use std::fs;
 use std::path::Path;
 
 use clap::Parser;
-
-// TODO fix naming system
+use regex::Regex;
 
 #[derive(Parser)]
 #[clap(author, version, about, long_about = None, propagate_version = true )]
@@ -59,9 +58,19 @@ pub fn get_editor() -> String {
 
 #[must_use]
 pub fn list_files(directory: &String) -> String {
+    list_matching_files(directory, r".*")
+}
+
+#[must_use]
+pub fn list_matching_files(directory: &String, regex_string: &str) -> String {
     let dir_paths = match fs::read_dir(directory) {
         Ok(read_dir_path) => read_dir_path,
         Err(e) => error!("Error while finding files: {e}"),
+    };
+
+    let regex = match Regex::new(regex_string) {
+        Ok(re) => re,
+        Err(e) => error!("Error with list regex: {e}"), // User should not receive this message
     };
 
     let mut message = format!("Contents of '{directory}':\n");
@@ -84,10 +93,16 @@ pub fn list_files(directory: &String) -> String {
                     None => error!("Could not parse file name to string {:?}", file_name),
                 };
 
-                message.push_str(format!("\t{}\n", file_name_string).as_str());
+                if regex.is_match(file_name_string) {
+                    message.push_str(format!("\t{}\n", file_name_string).as_str());
+                }
             }
             Err(e) => error!("Could not display file: {e}"),
         }
+    }
+
+    if message.is_empty() {
+        message.push_str("\tNo files found in {directory}");
     }
 
     message.trim().to_string()
