@@ -4,7 +4,7 @@ use std::io::prelude::*;
 
 use crate::commands::{run_command, run_editor};
 use crate::error;
-use crate::getters::{home, verify_filename};
+use crate::{get_home, verify_filename};
 
 use clap::Subcommand;
 
@@ -52,7 +52,7 @@ pub fn get() -> Result<Toml, String> {
 
 #[must_use]
 pub fn get_dir() -> String {
-    let path_string = format!("{}/{CONF_DIR}", home());
+    let path_string = format!("{}/{CONF_DIR}", get_home());
 
     // Check if config location exists
     match verify_filename(path_string.as_str()) {
@@ -79,7 +79,7 @@ pub fn parse_command(command_maybe: &Option<Commands>) {
                 if get().is_ok() {
                     error!("Config file already exists")
                 } else {
-                    let config_path_string = format!("{}/.config/noteiser", home());
+                    let config_path_string = format!("{}/.config/noteiser", get_home());
 
                     run_command("mkdir", &vec!["-p", config_path_string.as_str()]);
 

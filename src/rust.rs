@@ -5,8 +5,7 @@ use clap::Subcommand;
 
 use crate::commands::{run_command, run_editor};
 use crate::config;
-use crate::getters::{list_files, verify_filename};
-use crate::{confirm, error};
+use crate::{confirm, error, list_files, verify_filename};
 
 #[derive(Subcommand)]
 pub enum Commands {

@@ -3,8 +3,7 @@ use std::path::Path;
 
 use crate::{
     commands::{run_command, run_editor},
-    config, error,
-    getters::{list_files, verify_filename},
+    config, error, {list_files, verify_file_and_dir},
 };
 
 #[derive(Subcommand)]
@@ -40,23 +39,16 @@ fn note_new(filename: &String) {
                 None => error!("No notes directory set"),
             };
 
-            // Directory exists
-            match verify_filename(dir_path.as_str()) {
-                Some(path) => {
-                    let checked_filename = check_extension(filename);
+            let checked_filename = check_extension(filename);
+            let full_path = format!("{dir_path}/{checked_filename}");
 
-                    let full_path = format!("{path}/{checked_filename}");
+            if let Ok(path) = verify_file_and_dir(dir_path.as_str(), checked_filename.as_str()) {
+                error!("Note '{path}' already exists")
+            } else {
+                // TODO create file and dir in rust instead of using touch
+                run_command("touch", &vec![full_path.as_str()]);
 
-                    match verify_filename(full_path.as_str()) {
-                        Some(_) => error!("Note '{checked_filename}' already exists"),
-                        None => {
-                            run_command("touch", &vec![full_path.as_str()]);
-
-                            run_editor(full_path.as_str());
-                        }
-                    }
-                }
-                None => error!("Note directory '{dir_path}' does not exist"),
+                run_editor(full_path.as_str());
             }
         }
         Err(e) => error!("{e}"),
@@ -71,19 +63,11 @@ fn note_open(filename: &String) {
                 None => error!("No notes directory set"),
             };
 
-            // Directory exists
-            match verify_filename(dir_path.as_str()) {
-                Some(path) => {
-                    let checked_filename = check_extension(filename);
+            let checked_filename = check_extension(filename);
 
-                    let full_path = format!("{path}/{checked_filename}");
-
-                    match verify_filename(full_path.as_str()) {
-                        Some(path) => run_editor(path),
-                        None => error!("Note '{checked_filename}' does not exist"),
-                    }
-                }
-                None => error!("Note directory '{dir_path}' does not exist"),
+            match verify_file_and_dir(dir_path.as_str(), checked_filename.as_str()) {
+                Ok(path) => run_editor(&path),
+                Err(e) => error!("Note error: {e}"),
             }
         }
         Err(e) => error!("{e}"),

@@ -2,9 +2,9 @@ use clap::Subcommand;
 
 use crate::config;
 use crate::error;
-use crate::getters::{editor, verify_filename, Cli};
 use crate::note;
 use crate::rust;
+use crate::{get_editor, verify_filename, Cli};
 
 #[derive(Subcommand)]
 pub enum Commands {
@@ -46,7 +46,7 @@ pub fn run_command(command: &str, args: &Vec<&str>) {
 
 pub fn run_editor(filepath: &str) {
     match verify_filename(filepath) {
-        Some(name) => run_command(editor().as_str(), &vec![name]),
+        Some(name) => run_command(get_editor().as_str(), &vec![name]),
         None => error!("Editor could not find file '{filepath}'"),
     }
 }
