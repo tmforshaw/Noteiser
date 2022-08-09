@@ -16,7 +16,7 @@ use clap::Parser;
 use regex::Regex;
 
 #[derive(Parser)]
-#[clap(author, version, about, long_about = None, propagate_version = true )]
+#[clap(author, version, about = "A program to create and edit text documents in a way that is independent of directory", long_about = None, propagate_version = true )]
 pub struct Cli {
     /// Specify a specific editor
     #[clap(short, long, value_parser)]

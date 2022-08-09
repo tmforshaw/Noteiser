@@ -25,7 +25,7 @@ pub enum Commands {
         #[clap(value_parser)]
         file_name: Option<String>,
     },
-    /// List the projects in your rust directory
+    /// List files in project dir (or leave blank to list projects in rust directory)
     List {
         /// Show all files
         #[clap(short, long)]
