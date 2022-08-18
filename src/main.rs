@@ -144,7 +144,5 @@ pub fn verify_file_and_dir(filename: &str, directory: &str) -> Result<String, St
 fn main() {
     let cli = cli();
 
-    let _ = crate::file::create(&String::from("/home/tmforshaw/test/testicle.txt"));
-
     commands::match_command(&cli);
 }
