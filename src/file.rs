@@ -3,8 +3,7 @@ use std::path::Path;
 
 use crate::error;
 
-#[must_use]
-pub fn create(path_str: &String) -> fs::File {
+pub fn create(path_str: &String) {
     let filename = match Path::new(path_str.as_str()).file_name() {
         Some(name) => match name.to_str() {
             Some(name_str) => name_str,
@@ -19,13 +18,13 @@ pub fn create(path_str: &String) -> fs::File {
         error!("Could not create directory '{dir_path}: {e}");
     }
 
-    match fs::File::options()
+    if let Some(e) = fs::File::options()
         .read(true)
         .write(true)
         .create(true)
         .open(&path_str)
+        .err()
     {
-        Ok(file) => file,
-        Err(e) => error!("Could not create file '{path_str}': {e}"),
+        error!("Could not create file '{path_str}': {e}");
     }
 }
