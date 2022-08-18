@@ -133,9 +133,9 @@ pub fn verify_file_and_dir(filename: &str, directory: &str) -> Result<String, St
     match verify_filename(directory) {
         Some(_) => match verify_filename(full_path.as_str()) {
             Some(_) => Ok(full_path),
-            None => Err("File not found".to_string()),
+            None => Err(format!("File not found '{directory}/{filename}'")),
         },
-        None => error!("Directory not found"), // TODO allow this to be rectified
+        None => error!("Directory not found '{directory}'"),
     }
 }
 

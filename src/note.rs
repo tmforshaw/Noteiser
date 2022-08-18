@@ -42,7 +42,7 @@ fn note_new(filename: &String) {
             let checked_filename = check_extension(filename);
             let full_path = format!("{dir_path}/{checked_filename}");
 
-            if let Ok(path) = verify_file_and_dir(dir_path.as_str(), checked_filename.as_str()) {
+            if let Ok(path) = verify_file_and_dir(checked_filename.as_str(), dir_path.as_str()) {
                 error!("Note '{path}' already exists")
             } else {
                 // TODO create file and dir in rust instead of using touch
@@ -65,7 +65,7 @@ fn note_open(filename: &String) {
 
             let checked_filename = check_extension(filename);
 
-            match verify_file_and_dir(dir_path.as_str(), checked_filename.as_str()) {
+            match verify_file_and_dir(checked_filename.as_str(), dir_path.as_str()) {
                 Ok(path) => run_editor(&path),
                 Err(e) => error!("Note error: {e}"),
             }
