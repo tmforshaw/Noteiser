@@ -2,8 +2,8 @@ use clap::Subcommand;
 use std::path::Path;
 
 use crate::{
-    commands::{run_command, run_editor},
-    config, error, {get_files, verify_file_and_dir},
+    commands::run_editor,
+    config, error, file, {get_files, verify_file_and_dir},
 };
 
 #[derive(Subcommand)]
@@ -45,8 +45,7 @@ fn note_new(filename: &String) {
             if let Ok(path) = verify_file_and_dir(checked_filename.as_str(), dir_path.as_str()) {
                 error!("Note '{path}' already exists")
             } else {
-                // TODO create file and dir in rust instead of using touch
-                run_command("touch", &vec![full_path.as_str()]);
+                file::create(&full_path);
 
                 run_editor(full_path.as_str());
             }

@@ -5,6 +5,8 @@
 
 pub mod commands;
 pub mod config;
+// pub mod error;
+pub mod file;
 pub mod note;
 pub mod rust;
 pub mod temp_control;
@@ -141,6 +143,8 @@ pub fn verify_file_and_dir(filename: &str, directory: &str) -> Result<String, St
 
 fn main() {
     let cli = cli();
+
+    let _ = crate::file::create(&String::from("/home/tmforshaw/test/testicle.txt"));
 
     commands::match_command(&cli);
 }
