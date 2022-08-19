@@ -43,7 +43,9 @@ fn note_new(filename: &String) {
             let full_path = format!("{dir_path}/{checked_filename}");
 
             if let Ok(path) = verify_file_and_dir(checked_filename.as_str(), dir_path.as_str()) {
-                error!("Note '{path}' already exists")
+                println!("Note '{path}' already exists...\nOpening note");
+
+                run_editor(&full_path);
             } else {
                 file::create(&full_path);
 
