@@ -1,10 +1,9 @@
+use std::fs::remove_dir_all;
+
 use clap::Subcommand;
 use std::path::Path;
 
-use crate::{
-    commands::run_editor,
-    config, error, file, {get_files, verify_file_and_dir},
-};
+use crate::{commands::run_editor, config, confirm, error, file, get_files, verify_file_and_dir};
 
 #[derive(Subcommand)]
 pub enum Commands {
@@ -15,6 +14,11 @@ pub enum Commands {
     },
     /// Open a note
     Open {
+        #[clap(value_parser)]
+        file_name: String,
+    },
+    /// Remove a note
+    Rm {
         #[clap(value_parser)]
         file_name: String,
     },
@@ -75,6 +79,35 @@ fn note_open(filename: &String) {
     }
 }
 
+fn note_remove(filename: &String) {
+    match config::get() {
+        Ok(config) => {
+            let dir_path = match config.note {
+                Some(path) => path,
+                None => error!("No notes directory set"),
+            };
+
+            let checked_filename = check_extension(filename);
+
+            match verify_file_and_dir(checked_filename.as_str(), dir_path.as_str()) {
+                Ok(name) => {
+                    if confirm!("remove {checked_filename}") {
+                        match remove_dir_all(checked_filename) {
+                            Ok(_) => println!("Successfully deleted {name}"),
+                            Err(e) => error!("Could not remove note '{name}': {e}"),
+                        }
+                    } else {
+                        // User denies confirmation
+                        std::process::exit(0x1001);
+                    }
+                }
+                Err(e) => error!("Note '{checked_filename}' not found: {e}"),
+            }
+        }
+        Err(e) => error!("{e}"),
+    }
+}
+
 fn note_list() {
     match config::get() {
         Ok(config) => {
@@ -107,6 +140,7 @@ pub fn parse_command(command: &Commands) {
     match command {
         Commands::New { file_name } => note_new(file_name),
         Commands::Open { file_name } => note_open(file_name),
+        Commands::Rm { file_name } => note_remove(file_name),
         Commands::List => note_list(),
     };
 }
