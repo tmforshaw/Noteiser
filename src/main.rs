@@ -7,6 +7,7 @@ pub mod commands;
 pub mod config;
 // pub mod error;
 pub mod file;
+pub mod latex;
 pub mod note;
 pub mod rust;
 pub mod temp_control;

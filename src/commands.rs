@@ -2,6 +2,7 @@ use clap::Subcommand;
 
 use crate::config;
 use crate::error;
+use crate::latex;
 use crate::note;
 use crate::rust;
 use crate::{get_editor, verify_filename, Cli};
@@ -23,6 +24,11 @@ pub enum Commands {
     Rust {
         #[clap(subcommand)]
         command: rust::Commands,
+    },
+    /// Opening and displaying of latex files
+    Latex {
+        #[clap(subcommand)]
+        command: latex::Commands,
     },
     /// Note taking functions
     Note {
@@ -56,6 +62,7 @@ pub fn match_command(cli: &Cli) {
         Commands::Open { file_name } => run_editor(file_name.as_str()),
         Commands::Rust { command } => rust::parse_command(command),
         Commands::Config { command } => config::parse_command(command),
+        Commands::Latex { command } => latex::parse_command(command),
         Commands::Note { command } => note::parse_command(command),
     }
 }

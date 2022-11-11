@@ -12,6 +12,7 @@ use clap::Subcommand;
 #[derive(Debug, Deserialize)]
 pub struct Toml {
     pub dev: String,
+    pub doc: String,
     pub editor: Option<String>,
     pub editor_backup: Option<String>,
     pub note: Option<String>,
