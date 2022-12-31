@@ -74,7 +74,7 @@ fn latex_open(file_name: &String) {
             match verify_filename(&full_filename) {
                 Some(name) => {
                     run_editor(name);
-                    run_latex_preview(name);
+                    // run_latex_preview(name);
                 }
                 None => error!("Latex file not found: '{full_filename}'"),
             }
